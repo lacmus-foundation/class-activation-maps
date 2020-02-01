@@ -1,0 +1,12 @@
+md5: d27e8e985bc93447d79921e3139d116c
+cmd: SEASON=winter ./download-data.sh
+wdir: ..
+deps:
+- md5: 8e3e9591a2cdbf3f5567f8b964419140
+  path: download-data.sh
+outs:
+- md5: 81cef88b3acf500f8c00955e13f04d23.dir
+  path: data/winter
+  cache: true
+  metric: false
+  persist: false

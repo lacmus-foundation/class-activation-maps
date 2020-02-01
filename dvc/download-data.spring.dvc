@@ -1,0 +1,12 @@
+md5: cb1025b9a8e1fe5754d2712f6cde769f
+cmd: SEASON=spring ./download-data.sh
+wdir: ..
+deps:
+- md5: 8e3e9591a2cdbf3f5567f8b964419140
+  path: download-data.sh
+outs:
+- md5: c3d98bc7be2cb8c80333528a1fe6874a.dir
+  path: data/spring
+  cache: true
+  metric: false
+  persist: false

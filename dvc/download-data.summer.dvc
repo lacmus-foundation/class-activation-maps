@@ -1,0 +1,12 @@
+md5: 47b92b1ae1569b3f3a4c5f76032b2a3e
+cmd: SEASON=summer ./download-data.sh
+wdir: ..
+deps:
+- md5: 8e3e9591a2cdbf3f5567f8b964419140
+  path: download-data.sh
+outs:
+- md5: fcec47e1f47b82c26b6eb451aa5a3cce.dir
+  path: data/summer
+  cache: true
+  metric: false
+  persist: false
