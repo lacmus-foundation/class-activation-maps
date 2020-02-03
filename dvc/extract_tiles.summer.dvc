@@ -1,0 +1,14 @@
+md5: 7791cb9653a91ec8cd9aa926baea464f
+cmd: SEASON=summer python extract_tiles.py
+wdir: ..
+deps:
+- md5: f1731a645fb170b5993917c6e226ffb6
+  path: extract_tiles.py
+- md5: fcec47e1f47b82c26b6eb451aa5a3cce.dir
+  path: data/summer
+outs:
+- md5: be53d049d0760eaa02c0fb314469559d.dir
+  path: data/summer.tiles
+  cache: true
+  metric: false
+  persist: false

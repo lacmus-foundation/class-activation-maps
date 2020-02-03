@@ -1,13 +1,12 @@
 from multiprocessing import Pool
 import json
-import os
 import random
 
 import cv2
 
 from sklearn.model_selection import train_test_split
 
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 
 import numpy as np
 
@@ -16,11 +15,12 @@ from config import DATASET_DIR, CROP_SIZE
 
 
 DATASET = load_dataset(DATASET_DIR)
+TILES_DIR = DATASET_DIR.with_suffix('.tiles')
 
-person_dir = DATASET_DIR / 'tiles' / 'Person'
+person_dir = TILES_DIR / 'Person'
 person_dir.mkdir(parents=True, exist_ok=True)
 
-noperson_dir = DATASET_DIR / 'tiles' / 'NoPerson'
+noperson_dir = TILES_DIR / 'NoPerson'
 noperson_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -81,15 +81,16 @@ def create_crop_person(dataset, out_dir, size):
 
 
 def process_file_noperson(args):
-    filename, bboxes, out_dir, num_samples_per_image, size = args
+    filename, bboxes, out_dir, num_samples_per_image, size, seed = args
+    rnd = random.Random(seed)
     source_image = cv2.imread(str(filename), cv2.IMREAD_UNCHANGED)
     h, w, _ = source_image.shape
     mask = get_mask(w, h, bboxes)
     num_samples_generated = 0
     max_attempts = num_samples_per_image * 100
     for i in range(max_attempts):
-        x = random.randint(0, w - size - 1)
-        y = random.randint(0, h - size - 1)
+        x = rnd.randint(0, w - size - 1)
+        y = rnd.randint(0, h - size - 1)
         if not np.any(mask[y:y + size, x:x + size]):
             out_image = source_image[y:y + size, x:x + size]
             # don't create several images near the same area,
@@ -108,8 +109,9 @@ def process_file_noperson(args):
 def create_crop_noperson(dataset, out_dir, num_samples_per_image, size):
     print(f"Populating {out_dir}")
     pool = Pool()
+    rnd = random.Random(42)
     try:
-        tasks = [i + (out_dir, num_samples_per_image, size) for i in dataset]
+        tasks = [i + (out_dir, num_samples_per_image, size, rnd.random()) for i in dataset]
         for i in tqdm(pool.imap_unordered(process_file_noperson, tasks), total=len(tasks)):
             pass
     finally:
@@ -123,22 +125,22 @@ if __name__ == "__main__":
     create_crop_noperson(DATASET, noperson_dir, num_samples_per_image=50, size=CROP_SIZE)
 
     for i in ['train', 'val']:
-        p = DATASET_DIR / 'tiles' / i
+        p = TILES_DIR / i
         p.mkdir(exist_ok=True)
         for j in ['Person', 'NoPerson']:
             (p / j).mkdir(exist_ok=True)
 
     # load files list and split with default 25% going to val
-    files = list(DATASET_DIR.glob('tiles/*/*.jpg'))
+    files = list(TILES_DIR.glob('*/*.jpg'))
     train, val = train_test_split(files)
 
     # move train images
     for i in train:
-        os.rename(str(i), str(i).replace('tiles', 'tiles/train'))
+        i.rename(TILES_DIR / 'train' / i.name)
 
     # move test images
     for i in val:
-        os.rename(str(i), str(i).replace('tiles', 'tiles/val'))
+        i.rename(TILES_DIR / 'val' / i.name)
 
     # `tiles/{Person,NoPerson}` are now empty and unneeded, remove them:
     person_dir.rmdir()

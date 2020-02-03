@@ -1,0 +1,14 @@
+md5: b0f333d3a227c5b0525735fb409f81aa
+cmd: SEASON=winter python extract_tiles.py
+wdir: ..
+deps:
+- md5: f1731a645fb170b5993917c6e226ffb6
+  path: extract_tiles.py
+- md5: 81cef88b3acf500f8c00955e13f04d23.dir
+  path: data/winter
+outs:
+- md5: 15c5e5147a2fb501d89863f394e56e4f.dir
+  path: data/winter.tiles
+  cache: true
+  metric: false
+  persist: false

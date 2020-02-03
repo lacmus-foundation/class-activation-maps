@@ -1,0 +1,10 @@
+opencv-python-headless
+scikit-learn
+tqdm
+numpy
+tensorflow<2
+horovod
+efficientnet
+keras_radam
+nvidia-dali
+nvidia-dali-tf-plugin
