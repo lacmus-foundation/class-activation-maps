@@ -22,25 +22,15 @@ os.environ['TF_KERAS'] = '1'
 from keras_radam import RAdam  # noqa
 
 
-USE_HOROVOD = True
-
-if USE_HOROVOD:
-    hvd.init()
-    device_id = hvd.local_rank()
-    print("DEVICE_ID", device_id)
-else:
-    device_id = 0
-
+hvd.init()
+device_id = hvd.local_rank()
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 config.gpu_options.visible_device_list = str(device_id)
 K.set_session(tf.Session(config=config))
 
-if USE_HOROVOD:
-    batch_size = 16 * hvd.size()
-else:
-    batch_size = 16
+batch_size = 16 * hvd.size()
 
 backbone = efn.EfficientNetB2(
     input_shape=(224, 224, 3),
@@ -70,8 +60,8 @@ train_pipeline = AugmentationPipeline(
     batch_size=batch_size,
     num_threads=2,
     device_id=device_id,
-    shard_id=device_id if USE_HOROVOD else None,
-    num_shards=hvd.size() if USE_HOROVOD else None,
+    shard_id=device_id,
+    num_shards=hvd.size(),
 )
 
 images_tensor, labels_tensor, train_steps = get_pipeline_outs(train_pipeline, device_id)
@@ -86,12 +76,11 @@ train_model = compose(
 # opt = O.Adadelta(1.0 * hvd.size())
 opt = RAdam()
 
-if USE_HOROVOD:
-    # Horovod: add Horovod Distributed Optimizer.
-    opt = hvd.DistributedOptimizer(opt)
+# Horovod: add Horovod Distributed Optimizer.
+opt = hvd.DistributedOptimizer(opt)
 
 
-if (not USE_HOROVOD) or hvd.rank() == 0:
+if hvd.rank() == 0:
 
     MODEL_NAME = 'EfficientNetB2-NoShift'
 
@@ -133,6 +122,7 @@ if (not USE_HOROVOD) or hvd.rank() == 0:
         os.mkdir('checkpoints')
 
     callbacks = [
+        hvd.callbacks.BroadcastGlobalVariablesCallback(0),
         EvaluateModel(val_model, val_steps),
         CB.ModelCheckpoint(
             'checkpoints/' + MODEL_NAME + '.weights.{epoch:03d}-{val_loss:.4f}.h5',
@@ -140,11 +130,9 @@ if (not USE_HOROVOD) or hvd.rank() == 0:
         ),
     ]
 else:
-    callbacks = []
-
-if USE_HOROVOD:
-    callbacks.append(hvd.callbacks.BroadcastGlobalVariablesCallback(0))
-
+    callbacks = [
+        hvd.callbacks.BroadcastGlobalVariablesCallback(0),
+    ]
 
 backbone.trainable = False
 train_model.compile(opt, loss='binary_crossentropy',  target_tensors=[labels_tensor])
@@ -152,7 +140,7 @@ train_model.fit(
     epochs=2,
     steps_per_epoch=train_steps,
     callbacks=callbacks,
-    verbose=1 if (not USE_HOROVOD) or (hvd.rank() == 0) else 0,
+    verbose=1 if hvd.rank() == 0 else 0,
 )
 
 backbone.trainable = True
@@ -162,8 +150,8 @@ train_model.fit(
     epochs=10,
     steps_per_epoch=train_steps,
     callbacks=callbacks,
-    verbose=1 if (not USE_HOROVOD) or (hvd.rank() == 0) else 0,
+    verbose=1 if hvd.rank() == 0 else 0,
 )
 
-if (not USE_HOROVOD) or hvd.rank() == 0:
+if hvd.rank() == 0:
     train_model.save_weights(MODEL_NAME + '.weights.h5')
