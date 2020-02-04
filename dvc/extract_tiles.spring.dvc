@@ -1,13 +1,13 @@
-md5: bfcee723d1b5abe7f5084e1fe4129838
+md5: 06ea60bee8e6acfc78a01ac029fdfa63
 cmd: SEASON=spring python extract_tiles.py
 wdir: ..
 deps:
-- md5: f1731a645fb170b5993917c6e226ffb6
+- md5: 4577740f09fa2aa75339c70f1d5e784a
   path: extract_tiles.py
 - md5: c3d98bc7be2cb8c80333528a1fe6874a.dir
   path: data/spring
 outs:
-- md5: 0202b77ae11d4bd632fded613c552554.dir
+- md5: 580069036bb64d67dde03da81309d2f3.dir
   path: data/spring.tiles
   cache: true
   metric: false

@@ -11,11 +11,10 @@ from tqdm import tqdm
 import numpy as np
 
 from utils import load_dataset, get_mask
-from config import DATASET_DIR, CROP_SIZE
+from config import DATASET_DIR, TILES_DIR, CROP_SIZE
 
 
 DATASET = load_dataset(DATASET_DIR)
-TILES_DIR = DATASET_DIR.with_suffix('.tiles')
 
 person_dir = TILES_DIR / 'Person'
 person_dir.mkdir(parents=True, exist_ok=True)
@@ -77,7 +76,7 @@ def create_crop_person(dataset, out_dir, size):
         pool.terminate()
         pool.join()
         with (out_dir.parent / (out_dir.name + '.json')).open('w') as f:
-            json.dump(dict(results), f)
+            json.dump(dict(sorted(results)), f)
 
 
 def process_file_noperson(args):
@@ -136,11 +135,11 @@ if __name__ == "__main__":
 
     # move train images
     for i in train:
-        i.rename(TILES_DIR / 'train' / i.name)
+        i.rename(TILES_DIR / 'train' / i.parts[-2] / i.name)
 
     # move test images
     for i in val:
-        i.rename(TILES_DIR / 'val' / i.name)
+        i.rename(TILES_DIR / 'val' / i.parts[-2] / i.name)
 
     # `tiles/{Person,NoPerson}` are now empty and unneeded, remove them:
     person_dir.rmdir()

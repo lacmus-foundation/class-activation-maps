@@ -8,3 +8,4 @@ efficientnet
 keras_radam
 nvidia-dali
 nvidia-dali-tf-plugin
+lxml

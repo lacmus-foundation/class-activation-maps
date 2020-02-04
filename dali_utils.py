@@ -18,8 +18,10 @@ class AugmentationPipeline(Pipeline):
         self.random = ops.Uniform(range=(0.5, 1.5))
         self.random_coin = ops.CoinFlip()
 
-        self.input = ops.FileReader(file_root=root_dir, random_shuffle=True,
-                                    num_shards=num_shards, shard_id=shard_id)
+        self.input = ops.FileReader(
+            file_root=root_dir, random_shuffle=True,
+            num_shards=num_shards, shard_id=shard_id,
+        )
 
         self.decode = ops.ImageDecoder(device='mixed')
         self.rotate = ops.Rotate(device='gpu', interp_type=types.INTERP_LINEAR)
@@ -72,7 +74,7 @@ def get_pipeline_outs(pipe, device_id):
     pipe.build()  # to get epoch size
     epoch_size = list(pipe.epoch_size().values())[0]
     epoch_size = math.ceil(epoch_size / pipe.batch_size)
-    with tf.device("/XLA_GPU:{}".format(device_id)):
+    with tf.device("/device:GPU:{}".format(device_id)):
         images_tensor, labels_tensor = daliop(
             pipeline=pipe,
             shapes=[(pipe.batch_size, 224, 224, 3), (pipe.batch_size, 1)],

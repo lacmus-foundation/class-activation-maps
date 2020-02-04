@@ -16,19 +16,24 @@ import efficientnet.tfkeras as efn
 
 from utils import compose
 from dali_utils import AugmentationPipeline, CenterCropPipeline, get_pipeline_outs
-from config import DATASET_DIR
+from config import TILES_DIR
 
 os.environ['TF_KERAS'] = '1'
 from keras_radam import RAdam  # noqa
 
 
 hvd.init()
-device_id = hvd.local_rank()
+
+print("Started worker rank=%d local_rank=%d size=%d" % (
+    hvd.rank(), hvd.local_rank(), hvd.size()))
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = str(device_id)
+config.gpu_options.visible_device_list = str(hvd.local_rank())
 K.set_session(tf.Session(config=config))
+
+#device_id = hvd.local_rank()
+device_id = 0
 
 batch_size = 16 * hvd.size()
 
@@ -54,13 +59,12 @@ layers = [
     L.Activation('sigmoid')
 ]
 
-
 train_pipeline = AugmentationPipeline(
-    root_dir=str(DATASET_DIR / 'Tiles' / 'train'),
-    batch_size=batch_size,
+    root_dir=str((TILES_DIR / 'train').absolute()),
+    batch_size=16,
     num_threads=2,
     device_id=device_id,
-    shard_id=device_id,
+    shard_id=hvd.rank(),
     num_shards=hvd.size(),
 )
 
@@ -72,8 +76,6 @@ train_model = compose(
 )
 
 
-# Horovod: adjust learning rate based on number of GPUs.
-# opt = O.Adadelta(1.0 * hvd.size())
 opt = RAdam()
 
 # Horovod: add Horovod Distributed Optimizer.
@@ -85,7 +87,7 @@ if hvd.rank() == 0:
     MODEL_NAME = 'EfficientNetB2-NoShift'
 
     val_pipeline = CenterCropPipeline(
-        str(DATASET_DIR / 'Tiles' / 'val'),
+        str(TILES_DIR / 'val'),
         batch_size=16,
         num_threads=12,
         device_id=device_id,
